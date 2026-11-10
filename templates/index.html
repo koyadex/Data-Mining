@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Demo khai phá dữ liệu: phân loại hoa Iris bằng cây quyết định và xem giải thích dự đoán.">
+  <title>Phân loại Iris | Data Mining Lab</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172b2a;
+      --muted: #647572;
+      --green: #176b57;
+      --green-dark: #105444;
+      --green-pale: #eaf5ef;
+      --line: #e3eae5;
+      --paper: #ffffff;
+      --canvas: #f4f7f3;
+      --gold: #d5a94f;
+      --shadow: 0 18px 55px rgba(30, 63, 52, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 92% 0%, rgba(214, 232, 211, .66), transparent 31rem),
+        var(--canvas);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button, input { font: inherit; }
+
+    .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 25px 0;
+      border-bottom: 1px solid rgba(23, 43, 42, .08);
+    }
+
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: -.02em; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 13px;
+      background: var(--green);
+      color: white;
+      font-size: 19px;
+    }
+
+    .top-note { color: var(--muted); font-size: 13px; }
+
+    .hero { padding: 48px 0 28px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); content: ""; }
+
+    h1 {
+      max-width: 760px;
+      margin: 12px 0 12px;
+      font-size: clamp(34px, 5vw, 54px);
+      letter-spacing: -.055em;
+      line-height: 1.06;
+    }
+
+    .hero-copy { max-width: 670px; margin: 0; color: var(--muted); font-size: 16px; }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 4px 0 22px;
+    }
+
+    .workflow-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 68px;
+      padding: 13px 16px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, .74);
+    }
+
+    .step-number {
+      display: grid;
+      flex: 0 0 32px;
+      width: 32px;
+      height: 32px;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--green-pale);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .workflow-step strong { display: block; font-size: 13px; }
+    .workflow-step span:last-child { display: block; color: var(--muted); font-size: 12px; }
+
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .75fr); gap: 20px; align-items: start; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .form-card { padding: 26px; }
+    .side-card { padding: 22px; }
+
+    .section-heading { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 20px; }
+    h2 { margin: 0; font-size: 19px; letter-spacing: -.025em; }
+    .section-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+    .unit-tag {
+      padding: 5px 10px;
+      border-radius: 99px;
+      background: #f0f4f1;
+      color: #536761;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+
+    .field label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 700; }
+    .field input {
+      width: 100%;
+      min-height: 47px;
+      padding: 11px 13px;
+      border: 1px solid #dce5df;
+      border-radius: 11px;
+      outline: none;
+      background: #fbfcfb;
+      color: var(--ink);
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+
+    .field input:focus { border-color: #4c9a7c; background: white; box-shadow: 0 0 0 3px rgba(76, 154, 124, .14); }
+    .field input::placeholder { color: #a0aaa5; }
+
+    .form-actions { display: flex; gap: 10px; align-items: center; margin-top: 19px; }
+
+    .primary-button {
+      display: inline-flex;
+      min-height: 46px;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--green);
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 750;
+      transition: background .15s, transform .15s;
+    }
+
+    .primary-button:hover { transform: translateY(-1px); background: var(--green-dark); }
+    .form-hint { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
+
+    .error {
+      margin: 16px 0 0;
+      padding: 11px 13px;
+      border: 1px solid #f0c8c3;
+      border-radius: 11px;
+      background: #fff5f3;
+      color: #9d382e;
+      font-size: 13px;
+    }
+
+    .samples { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .samples-title { margin: 0 0 10px; font-size: 12px; font-weight: 750; }
+    .sample-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .sample-button {
+      padding: 7px 10px;
+      border: 1px solid #dce8e0;
+      border-radius: 9px;
+      background: #f8fbf8;
+      color: #315e4f;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sample-button:hover { border-color: #8fbaa1; background: var(--green-pale); }
+
+    .model-card { background: #183d35; color: #f4fbf6; }
+    .model-card .section-heading p { color: #bfd2c8; }
+    .model-pill { padding: 5px 9px; border: 1px solid rgba(223, 241, 229, .2); border-radius: 99px; color: #c9e4d4; font-size: 10px; }
+
+    .model-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin: 18px 0; }
+    .stat { padding: 12px; border: 1px solid rgba(230, 246, 235, .12); border-radius: 12px; background: rgba(255, 255, 255, .045); }
+    .stat strong { display: block; font-size: 20px; letter-spacing: -.04em; }
+    .stat span { color: #bfd2c8; font-size: 11px; }
+    .model-note { margin: 15px 0 0; color: #c6d9cf; font-size: 12px; }
+
+    .result-card { grid-column: 1 / -1; padding: 25px 27px; border-color: #cfe3d5; background: linear-gradient(120deg, #f4fbf5, #fff 55%); }
+    .result-top { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+    .result-kicker { margin: 0 0 5px; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .result-label { margin: 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.045em; }
+    .confidence { text-align: right; }
+    .confidence strong { display: block; color: var(--green); font-size: 25px; letter-spacing: -.04em; }
+    .confidence span { color: var(--muted); font-size: 11px; }
+
+    .result-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-top: 22px; }
+    .result-columns h3 { margin: 0 0 12px; font-size: 13px; }
+    .probability-row { display: grid; grid-template-columns: 145px minmax(60px, 1fr) 44px; align-items: center; gap: 10px; margin: 11px 0; font-size: 11px; }
+    .probability-label { overflow-wrap: anywhere; color: #43534e; }
+    .bar-track { height: 8px; overflow: hidden; border-radius: 99px; background: #e8efea; }
+    .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #58a37c, #20745a); }
+    .probability-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 750; }
+
+    .rules { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: rule; }
+    .rules li { display: flex; align-items: start; gap: 9px; color: #42534d; font-size: 12px; counter-increment: rule; }
+    .rules li::before { content: counter(rule, decimal-leading-zero); color: #328061; font-size: 10px; font-weight: 800; }
+    .no-rules { margin: 0; color: var(--muted); font-size: 12px; }
+    .probability-note { margin: 14px 0 0; color: var(--muted); font-size: 10px; }
+
+    .tree-section { margin-top: 22px; padding: 24px; }
+    .tree-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 16px; }
+    .tree-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .tree-image-wrap { overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: #fbfcfb; text-align: center; }
+    .tree-image { display: block; width: min(100%, 900px); height: auto; margin: 0 auto; }
+    .tree-fallback { padding: 25px; border: 1px dashed #cad8cf; border-radius: 12px; color: var(--muted); text-align: center; font-size: 13px; }
+
+    footer { padding: 26px 0 34px; color: var(--muted); font-size: 11px; text-align: center; }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 28px, 600px); }
+      .hero { padding-top: 35px; }
+      .workflow { grid-template-columns: 1fr; gap: 8px; }
+      .workflow-step { min-height: 58px; }
+      .main-grid { grid-template-columns: 1fr; }
+      .result-card { grid-column: auto; }
+      .result-columns { grid-template-columns: 1fr; gap: 19px; }
+      .tree-section { padding: 19px; }
+    }
+
+    @media (max-width: 480px) {
+      .shell { width: calc(100% - 22px); }
+      .topbar { padding: 17px 0; }
+      .top-note { max-width: 110px; text-align: right; }
+      .hero { padding: 30px 0 22px; }
+      .hero-copy { font-size: 14px; }
+      .form-card, .side-card, .result-card { padding: 19px; }
+      .field-grid { gap: 12px 9px; }
+      .field label { min-height: 36px; font-size: 11px; }
+      .form-actions { align-items: stretch; }
+      .primary-button { width: 100%; }
+      .result-top { align-items: center; }
+      .confidence strong { font-size: 21px; }
+      .probability-row { grid-template-columns: 115px minmax(45px, 1fr) 39px; gap: 7px; font-size: 10px; }
+      .tree-heading { align-items: start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✿</span><span>Data Mining Lab</span></div>
+      <div class="top-note">Thực hành phân lớp dữ liệu</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">Machine learning · Iris dataset</div>
+        <h1>Khám phá cách cây quyết định phân loại hoa</h1>
+        <p class="hero-copy">Nhập bốn số đo của một bông hoa để xem mô hình dự đoán loài nào, xác suất ra sao và những điều kiện nào trong cây đã dẫn đến kết quả.</p>
+      </section>
+
+      <section class="workflow" aria-label="Quy trình khai phá dữ liệu">
+        <div class="workflow-step"><span class="step-number">01</span><span><strong>Dữ liệu đầu vào</strong><span>Bốn số đo, đơn vị cm</span></span></div>
+        <div class="workflow-step"><span class="step-number">02</span><span><strong>Mô hình phân lớp</strong><span>Cây quyết định đã huấn luyện</span></span></div>
+        <div class="workflow-step"><span class="step-number">03</span><span><strong>Giải thích kết quả</strong><span>Nhãn, xác suất và luật cây</span></span></div>
+      </section>
+
+      <div class="main-grid">
+        <section class="card form-card" aria-labelledby="form-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="form-title">Thông tin mẫu hoa</h2>
+              <p>Nhập số đo hoặc điền nhanh một mẫu tham khảo.</p>
+            </div>
+            <span class="unit-tag">ĐƠN VỊ: CM</span>
+          </div>
+
+          <form method="post" action="{{ url_for('index') }}">
+            <div class="field-grid">
+              {% for field, label in fields %}
+              <div class="field">
+                <label for="{{ field }}">{{ label }}</label>
+                <input
+                  id="{{ field }}"
+                  name="{{ field }}"
+                  type="number"
+                  inputmode="decimal"
+                  min="0.01"
+                  step="any"
+                  placeholder="Ví dụ: 5.1"
+                  value="{{ values.get(field, '') }}"
+                  required>
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Phân loại mẫu <span aria-hidden="true">→</span></button>
+            </div>
+            <p class="form-hint">Mô hình được huấn luyện trên bộ dữ liệu Iris; kết quả dành cho mục đích học tập và minh họa.</p>
+          </form>
+
+          {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+          <div class="samples">
+            <p class="samples-title">Thử nhanh mẫu tham khảo</p>
+            <div class="sample-list">
+              {% for sample in samples %}
+              <button class="sample-button" type="button" data-values='{{ sample.values|tojson }}'>{{ sample.name }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <aside class="card side-card model-card" aria-labelledby="model-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="model-title">Mô hình đang dùng</h2>
+              <p>Cây quyết định phân lớp đa lớp</p>
+            </div>
+            <span class="model-pill">IRIS</span>
+          </div>
+          <div class="model-stats">
+            <div class="stat"><strong>04</strong><span>đặc trưng đo lường</span></div>
+            <div class="stat"><strong>03</strong><span>loài hoa đầu ra</span></div>
+            <div class="stat"><strong>≤</strong><span>so sánh theo ngưỡng</span></div>
+            <div class="stat"><strong>✓</strong><span>có thể giải thích</span></div>
+          </div>
+          <p class="model-note">Cây lần lượt kiểm tra các ngưỡng trên số đo. Mỗi nhánh đưa mẫu đến một nút mới cho tới khi cây chọn nhãn dự đoán.</p>
+        </aside>
+
+        {% if result %}
+        <section class="card result-card" aria-labelledby="result-title" aria-live="polite">
+          <div class="result-top">
+            <div>
+              <p class="result-kicker">Kết quả phân loại</p>
+              <h2 class="result-label" id="result-title">{{ result.label }}</h2>
+            </div>
+            <div class="confidence"><strong>{{ result.confidence }}%</strong><span>tỷ lệ lớp tại nút lá</span></div>
+          </div>
+
+          <div class="result-columns">
+            <section aria-labelledby="probability-title">
+              <h3 id="probability-title">Xác suất theo từng lớp</h3>
+              {% for row in result.probabilities %}
+              <div class="probability-row">
+                <span class="probability-label">{{ row.label }}</span>
+                <span class="bar-track" aria-hidden="true"><span class="bar-fill" style="display:block; width: {{ row.percent }}%"></span></span>
+                <span class="probability-value">{{ row.percent }}%</span>
+              </div>
+              {% endfor %}
+              <p class="probability-note">Các tỷ lệ được tính từ thành phần lớp của những mẫu huấn luyện đến nút lá này; chúng không bảo đảm kết quả ngoài dữ liệu đã học.</p>
+            </section>
+
+            <section aria-labelledby="rules-title">
+              <h3 id="rules-title">Vì sao cây chọn nhãn này?</h3>
+              {% if result.rules %}
+              <ol class="rules">
+                {% for rule in result.rules %}<li>{{ rule }}</li>{% endfor %}
+              </ol>
+              {% else %}
+              <p class="no-rules">Cây đã đưa mẫu trực tiếp tới nút dự đoán.</p>
+              {% endif %}
+            </section>
+          </div>
+        </section>
+        {% endif %}
+      </div>
+
+      <section class="card tree-section" aria-labelledby="tree-title">
+        <div class="tree-heading">
+          <div>
+            <h2 id="tree-title">Sơ đồ cây quyết định</h2>
+            <p>Nhánh trái tương ứng với điều kiện đúng; nhánh phải tương ứng với điều kiện sai.</p>
+          </div>
+          <span class="unit-tag">CẤU TRÚC MÔ HÌNH</span>
+        </div>
+        {% if has_tree_image %}
+        <div class="tree-image-wrap"><img class="tree-image" src="{{ url_for('tree_image') }}" alt="Sơ đồ cây quyết định dùng để phân loại các loài hoa Iris" loading="lazy"></div>
+        {% else %}
+        <div class="tree-fallback">Chưa có ảnh sơ đồ cây. Hãy đặt file <strong>cay_quyet_dinh.png</strong> cạnh <strong>flask_app.py</strong> để hiển thị.</div>
+        {% endif %}
+      </section>
+    </main>
+
+    <footer>Ứng dụng minh họa quy trình khai phá dữ liệu với mô hình cây quyết định trên bộ dữ liệu Iris.</footer>
+  </div>
+
+  <script>
+    document.querySelectorAll(".sample-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const numbers = JSON.parse(button.dataset.values);
+        const fields = ["sepal_length", "sepal_width", "petal_length", "petal_width"];
+        fields.forEach((field, index) => {
+          document.getElementById(field).value = numbers[index];
+        });
+        document.getElementById(fields[0]).focus();
+      });
+    });
+  </script>
+</body>
+</html>
