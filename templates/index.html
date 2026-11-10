@@ -340,7 +340,7 @@
             <p class="samples-title">Thử nhanh mẫu tham khảo</p>
             <div class="sample-list">
               {% for sample in samples %}
-              <button class="sample-button" type="button" data-values='{{ sample.values|tojson }}'>{{ sample.name }}</button>
+              <button class="sample-button" type="button" data-values='{{ sample["values"]|tojson }}'>{{ sample.name }}</button>
               {% endfor %}
             </div>
           </div>
